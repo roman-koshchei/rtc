@@ -1,60 +1,89 @@
-﻿using System.IO;
+﻿using rtc;
+using System.Runtime.InteropServices;
 
-/*
-
-    Watch when file is changed, then update its copy file
-
- */
+// Watch when file is changed, then update its copy file
 
 namespace cli
 {
     internal class Program
     {
-        private static Dictionary<string, FileSystemWatcher> watchers = new();
+        [DllImport("Kernel32.dll")]
+        private static extern IntPtr GetConsoleWindow();
 
-        private static string source = @"C:\Users\roman\Git\roman-koshchei\dtos\";
-        private static string destination = @"C:\Users\roman\Git\roman-koshchei\rtcopy\";
+        [DllImport("User32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int cmdShow);
+
+        private static Rtc rtc = new();
+
+        private static string source = @"C:\Users\roman\git\roman-koshchei\rtc\test\real\";
+        private static string destination = @"C:\Users\roman\git\roman-koshchei\rtc\test\copy\";
+
+        private static Dictionary<string, Action<List<string>>> commands = new();
 
         private static void Main(string[] args)
         {
-            var watcher = new FileSystemWatcher(source)
+            IntPtr hWnd = GetConsoleWindow();
+            if (hWnd != IntPtr.Zero)
             {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
-                IncludeSubdirectories = true,
-                EnableRaisingEvents = true,
-            };
+                ShowWindow(hWnd, 0);
+            }
 
-            watcher.Filters.Add("dto.txt");
-            watcher.Filters.Add("tcrst.txt");
-            watcher.Filters.Add("*.txt");
+            AddDir("test", source, destination);
 
-            watcher.Changed += OnChanged;
+            while (true)
+            {
+            }
+            //if (args.Length == 0)
+            //{
+            //}
+            //else
+            //{
+            //    List<string> argList = new(args);
+            //    string command = argList[0];
+            //    argList.RemoveAt(0);
 
-            watchers.Add(destination, watcher);
+            //    if (commands.ContainsKey(command))
+            //    {
+            //        commands[command](argList);
+            //    }
+            //    else
+            //    {
+            //        Console.WriteLine("Command doesn't exist");
+            //    }
+            //}
 
-            Console.WriteLine("Press enter to exit.");
-            Console.ReadLine();
+            //foreach (string arg in args)
+            //{
+            //    Console.WriteLine(arg);
+            //}            //string[] files = { "f.txt" };
+            ////AddDir("test", source, destination); //, files);
+
+            //Console.WriteLine("Press enter to exit.");
+            //Console.ReadLine();
         }
 
-        private static void OnChanged(object sender, FileSystemEventArgs e)
+        private static void AddDir(string name, string source, string target)
         {
-            if (e.ChangeType != WatcherChangeTypes.Changed)
+            try
             {
-                return;
+                rtc.AddDir(name, source, target);
             }
-            Console.WriteLine($"Changed: {e.Name}");
-
-            string? sub = Path.GetDirectoryName(e.Name);
-
-            if (sub != null && !Directory.Exists($"{destination}{sub}"))
+            catch (ArgumentException)
             {
-                Directory.CreateDirectory($"{destination}{sub}");
+                Console.WriteLine($"name {name} already exists");
             }
+        }
 
-            File.Copy($"{source}{e.Name}", $"{destination}{e.Name}", true);
-
-            watchers[destination].Dispose();
-            watchers.Remove(destination);
+        private static void AddFiles(string name, string source, string target, string[] files)
+        {
+            try
+            {
+                rtc.AddFiles(name, source, target, files);
+            }
+            catch (ArgumentException)
+            {
+                Console.WriteLine($"name {name} already exists");
+            }
         }
     }
 }

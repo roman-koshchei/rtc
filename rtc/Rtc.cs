@@ -2,16 +2,27 @@
 {
     public class Rtc
     {
+        private Dictionary<string, RtcWatcher> watchers = new();
 
-        public void Dir(string path)
+        public void AddDir(string name, string source, string target, bool includeSubdirs = true)
         {
-            using var watcher = new FileSystemWatcher(path);
+            RtcWatcher watcher = new(source, target, includeSubdirs);
+            watchers.Add(name, watcher);
 
-            watcher.EnableRaisingEvents = true;
+            // TODO: add to local .json
         }
 
-        public void Undir(string path)
+        public void RemoveDir(string name)
         {
+            watchers.Remove(name);
+
+            // TODO: remove from .json
+        }
+
+        public void AddFiles(string name, string source, string target, string[] files)
+        {
+            RtcWatcher watcher = new(source, target, files);
+            watchers.Add(name, watcher);
         }
     }
 }
